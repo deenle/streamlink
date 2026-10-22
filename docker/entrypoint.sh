@@ -80,7 +80,7 @@ start_pipeline() {
             -c:v copy \
             -c:a aac -ac 2 \
             -f mpegts \
-            "tcp://127.0.0.1:8000?listen" & 
+            "udp://127.0.0.1:8000" & 
         ffmpeg_pid=$!
 
         local streamlink_opts=()
@@ -98,7 +98,7 @@ start_pipeline() {
         streamlink_pid=$!
 
         wait "$streamlink_pid"
-        local pipeline_status=$?
+        # local pipeline_status=$?
         streamlink_pid=""
 
         kill -TERM "$ffmpeg_pid" 2>/dev/null
