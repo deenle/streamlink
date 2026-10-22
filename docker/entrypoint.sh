@@ -165,7 +165,10 @@ exec $RUN_CMD <<'EOF'
         log "starting streamlink (attempt $attempt)"
 
         stamp="$(date -u '+%Y%m%d-%H%M%S')"
-        record_file="$RECORD_DIR/stream-$stamp-$attempt.ts"
+        # Sanitize channel name for filename (remove spaces and special characters)
+        safe_filename_channel="${CHANNEL_NAME//[^a-zA-Z0-9_-]/_}"
+        # Use quality and channel name in the filename for better organization.
+        record_file="$RECORD_DIR/${safe_filename_channel}_${STREAM_QUALITY}_$stamp-$attempt.ts"
 
         rm -f "$FIFO_PATH"
         mkfifo "$FIFO_PATH" || {
