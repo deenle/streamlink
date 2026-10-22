@@ -36,8 +36,10 @@ COPY src/ ./src/
 # "8.6.2+0.g<hash>.dirty" instead of a clean "8.6.2".
 RUN printf '*.egg-info/\nbuild/\ndist/\n__pycache__/\n*.py[cod]\n' > .gitignore \
  && git init -q . \
+ && git config --global user.email "build@local" \
+ && git config --global user.name "build" \
  && git add -A \
- && git -c user.email=build@local -c user.name=build commit -qm "docker build" \
+ && git commit -qm "docker build" \
  && git tag -a "v${STREAMLINK_VERSION}" -m "${STREAMLINK_VERSION}"
 
 # The "decompress" extra enables brotli/zstd compressed HLS segments.
