@@ -49,8 +49,9 @@ chown -R "$USER_ID:$GROUP_ID" /srv/www /records
 STREAM_URL="${STREAM_URL:-}"
 STREAM_QUALITY="${STREAM_QUALITY:-best}"
 CHANNEL_NAME="${CHANNEL_NAME:-Stream}"
+CONTAINER_PORT="${CONTAINER_PORT:-8080}"
 HLS_DIR="${HLS_DIR:-/srv/www/hls}"
-RECORD_DIR="${RECORD_DIR:-/records}"
+RECORD_DIR="/records"
 HLS_TIME="${HLS_TIME:-4}"
 HLS_LIST_SIZE="${HLS_LIST_SIZE:-6}"
 RETRY_STREAMS="${RETRY_STREAMS:-10}"
@@ -60,6 +61,9 @@ RESTART_DELAY="${RESTART_DELAY:-5}"
 FIFO_PATH="${FIFO_PATH:-/tmp/streamlink.fifo}"
 # Extra arguments appended to the streamlink command line.
 STREAMLINK_ARGS="${STREAMLINK_ARGS:-}"
+
+# Update nginx config with the desired container port
+sed -i "s/listen 8080;/listen $CONTAINER_PORT;/" /etc/nginx/nginx.conf
 
 if [ -z "$STREAM_URL" ]; then
     log "ERROR: STREAM_URL is not set."
@@ -124,7 +128,7 @@ exec $RUN_CMD <<'EOF'
     STREAM_QUALITY="${STREAM_QUALITY:-best}"
     CHANNEL_NAME="${CHANNEL_NAME:-Stream}"
     HLS_DIR="${HLS_DIR:-/srv/www/hls}"
-    RECORD_DIR="${RECORD_DIR:-/records}"
+    RECORD_DIR="/records"
     ENABLE_RECORDING="${ENABLE_RECORDING:-true}"
     HLS_TIME="${HLS_TIME:-4}"
     HLS_LIST_SIZE="${HLS_LIST_SIZE:-6}"

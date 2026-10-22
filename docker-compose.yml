@@ -24,6 +24,10 @@ services:
     image: streamlink-vk:local
     container_name: streamlink-vk
     restart: unless-stopped
+    networks:
+      - ${DOCKER_NETWORK}
+
+
 
     environment:
       # The stream to watch. This is the only required value.
@@ -34,12 +38,15 @@ services:
       - STREAM_QUALITY=${STREAM_QUALITY:-best}
       # Channel name shown in Jellyfin's Live TV guide.
       - CHANNEL_NAME=${CHANNEL_NAME:-Stream}
+      - CONTAINER_PORT=${CONTAINER_PORT:-8080}
+      - ENABLE_RECORDING=${ENABLE_RECORDING:-true}
 
     ports:
       # Host port -> container port. The host port is what you enter in
       # Jellyfin's M3U tuner URL. The default is deliberately not 8096, which
       # is Jellyfin's own port on TrueNAS.
-      - "${HOST_PORT:-8097}:8080"
+      - "${HOST_PORT:-8097}:${CONTAINER_PORT:-8080}"
+
 
     volumes:
       # Recordings are written here. Point this at a dataset on your NAS,
@@ -51,3 +58,8 @@ services:
 
 volumes:
   streamlink-hls:
+
+networks:
+  ${DOCKER_NETWORK}:
+    external: true
+
