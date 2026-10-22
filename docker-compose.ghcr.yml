@@ -10,7 +10,7 @@ services:
     container_name: streamlink-vk
     restart: unless-stopped
     networks:
-      - ${DOCKER_NETWORK}
+      - shared
 
     environment:
       # The stream to watch. This is the only required value.
@@ -42,9 +42,9 @@ services:
           memory: 4G
 
 networks:
-  ${DOCKER_NETWORK}:
+  shared:
+    name: ${DOCKER_NETWORK}
     external: true
-
 
 volumes:
   streamlink-hls:
