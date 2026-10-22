@@ -1,0 +1,47 @@
+# Dockhand stack for the streamlink container.
+#
+# Deploy this from Dockhand by adding the repository as a git-backed stack and
+# pointing it at this file. Enable "Build images on deploy" so that the image
+# is rebuilt from the Dockerfile in this repository.
+#
+# The only value you have to provide is the stream link. Set it in Dockhand
+# under the stack's environment variables:
+#
+#   STREAM_URL=https://live.vkvideo.ru/CHANNEL
+#
+# Variables entered in Dockhand's environment panel end up in a .env.dockhand
+# file. They are NOT injected into the container automatically, which is why
+# they have to be mapped explicitly with "environment:" below.
+
+services:
+  streamlink:
+    image: ghcr.io/deenle/streamlink:latest
+    container_name: streamlink-vk
+    restart: unless-stopped
+
+    environment:
+      # The stream to watch. This is the only required value.
+      - STREAM_URL=${STREAM_URL}
+      - UID=${UID}
+      - GID=${GID}
+      # Stream quality, e.g. best, worst, 720p.
+      - STREAM_QUALITY=${STREAM_QUALITY:-best}
+      # Channel name shown in Jellyfin's Live TV guide.
+      - CHANNEL_NAME=${CHANNEL_NAME:-Stream}
+
+    ports:
+      # Host port -> container port. The host port is what you enter in
+      # Jellyfin's M3U tuner URL. The default is deliberately not 8096, which
+      # is Jellyfin's own port on TrueNAS.
+      - "${HOST_PORT:-8097}:8080"
+
+    volumes:
+      # Recordings are written here. Point this at a dataset on your NAS,
+      # e.g. /mnt/tank/recordings
+      - ${RECORDINGS_DIR:-./recordings}:/records
+      # The HLS working directory. Kept on a volume so that the segments
+      # survive a container restart.
+      - streamlink-hls:/srv/www/hls
+
+volumes:
+  streamlink-hls:
