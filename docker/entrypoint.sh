@@ -63,7 +63,6 @@ start_pipeline() {
     log "nginx started (pid $nginx_pid)"
 
     # Derive a safe filename from the STREAM_URL
-    # This removes http(s):// and replaces all non-alphanumeric chars with underscores
     local url_safe_name
     url_safe_name=$(echo "$STREAM_URL" | sed -E 's|^https?://||; s|[^a-zA-Z0-9_-]|_|g')
 
@@ -94,15 +93,17 @@ start_pipeline() {
             "$HLS_DIR/live.m3u8" &
         ffmpeg_pid=$!
 
-        local record_args=""
+        # Use an array for optional arguments to avoid quoting bugs
+        local streamlink_opts=()
         if [ "$ENABLE_RECORDING" = "true" ]; then
-            record_args="--record=\"$record_file\""
+            streamlink_opts+=("--record" "$record_file")
         fi
 
         # Start streamlink to fill the FIFO
+        # Note: ${streamlink_opts[@]} expands to multiple separate arguments
         streamlink \
             --stdout \
-            $record_args \
+            "${streamlink_opts[@]}" \
             --retry-streams "$RETRY_STREAMS" \
             --loglevel info \
             $STREAMLINK_ARGS \
@@ -134,7 +135,6 @@ start_pipeline() {
 # Root Setup & Execution Entrypoint
 # ---------------------------------------------------------------------------
 
-# If the first argument is 'start-pipeline', skip setup and run the logic
 if [ "${1:-}" = "start-pipeline" ]; then
     start_pipeline
     exit 0
@@ -154,13 +154,11 @@ fi
 mkdir -p /srv/www/hls /records
 chown -R "$USER_ID:$GROUP_ID" /srv/www /records
 
-# Validate required variables
 if [ -z "$STREAM_URL" ]; then
     log "ERROR: STREAM_URL is not set."
     exit 1
 fi
 
-# Update nginx config and channel metadata
 sed -i "s/listen 8080;/listen $CONTAINER_PORT;/" /etc/nginx/nginx.conf
 safe_channel_name="${CHANNEL_NAME//[\"\\\\]/}"
 echo "set \$channel_name \"$safe_channel_name\";" > /tmp/nginx-channel.conf
@@ -169,7 +167,6 @@ log "STREAM_URL=$STREAM_URL"
 log "quality=$STREAM_QUALITY channel=$CHANNEL_NAME"
 
 if [ "$SUDO_USER_REQUIRED" = "1" ]; then
-    # Re-execute this script as the dynamic user, passing the start-pipeline flag
     exec gosu streamlink_user "$0" start-pipeline
 else
     exec bash "$0" start-pipeline
