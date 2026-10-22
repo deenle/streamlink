@@ -21,9 +21,6 @@ services:
       args:
         # Keep in sync with the version in the CHANGELOG.
         STREAMLINK_VERSION: "8.6.2"
-        # Set these to the owner of the recordings dataset on your NAS.
-        UID: ${UID}
-        GID: ${GID}
     image: streamlink-vk:local
     container_name: streamlink-vk
     restart: unless-stopped
@@ -31,6 +28,8 @@ services:
     environment:
       # The stream to watch. This is the only required value.
       - STREAM_URL=${STREAM_URL}
+      - UID=${UID}
+      - GID=${GID}
       # Stream quality, e.g. best, worst, 720p.
       - STREAM_QUALITY=${STREAM_QUALITY:-best}
       # Channel name shown in Jellyfin's Live TV guide.

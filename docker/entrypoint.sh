@@ -27,13 +27,18 @@ log() {
 
 log "Configuring container for UID: $USER_ID, GID: $GROUP_ID"
 
-# Create the group and user dynamically.
-# We use '|| true' because the user/group might already exist.
-groupadd -g "$GROUP_ID" streamlink_user || true
-useradd -u "$USER_ID" -g "$GROUP_ID" -m -s /usr/sbin/nologin streamlink_user || true
+if [ "$USER_ID" = "0" ]; then
+    log "Running as root (UID 0), skipping user creation."
+    # We set a flag to tell gosu to skip
+    SUDO_USER_REQUIRED=0
+else
+    # Create the group and user dynamically.
+    groupadd -g "$GROUP_ID" streamlink_user || true
+    useradd -u "$USER_ID" -g "$GROUP_ID" -m -s /usr/sbin/nologin streamlink_user || true
+    SUDO_USER_REQUIRED=1
+fi
 
 # Ensure shared directories exist and are owned by the dynamic user.
-# We do this at runtime so it works regardless of the image's build-time UID.
 mkdir -p /srv/www/hls /records
 chown -R "$USER_ID:$GROUP_ID" /srv/www /records
 
@@ -100,9 +105,14 @@ cleanup() {
 
 trap cleanup TERM INT
 
-# Use gosu to wrap the entire supervision loop as the dynamic user.
-# This ensures nginx, ffmpeg, and streamlink all run as the correct UID.
-exec gosu streamlink_user bash <<'EOF'
+if [ "$SUDO_USER_REQUIRED" = "1" ]; then
+    # Use gosu to wrap the entire supervision loop as the dynamic user.
+    # This ensures nginx, ffmpeg, and streamlink all run as the correct UID.
+    exec gosu streamlink_user bash <<'EOF'
+else
+    # Run as root
+    exec bash <<'EOF'
+fi
     # We need to re-import the variables and functions inside the heredoc
     # since gosu starts a new shell.
     set -uo pipefail
