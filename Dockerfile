@@ -53,7 +53,7 @@ FROM python:${PYTHON_VERSION}-slim AS runtime
 # ffmpeg segments the stream into HLS, nginx serves it to Jellyfin.
 # gosu is used to drop root privileges to a dynamic UID/GID at runtime.
 RUN apt-get update \
- && apt-get install -y --no-install-recommends ffmpeg nginx gosu \
+ && apt-get install -y --no-install-recommends ffmpeg nginx-extras gosu \
  && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /wheels /wheels
