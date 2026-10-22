@@ -22,8 +22,8 @@ services:
         # Keep in sync with the version in the CHANGELOG.
         STREAMLINK_VERSION: "8.6.2"
         # Set these to the owner of the recordings dataset on your NAS.
-        UID: "1000"
-        GID: "1000"
+        UID: ${UID}
+        GID: ${GID}
     image: streamlink-vk:local
     container_name: streamlink-vk
     restart: unless-stopped
