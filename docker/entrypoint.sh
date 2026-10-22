@@ -1,10 +1,7 @@
 #!/bin/bash
 #
-# Container entrypoint.
-#
-# Turns a single environment variable (STREAM_URL) into a running pipeline:
-#   streamlink --> stdout --> ffmpeg --> HLS segments --> nginx --> Jellyfin
-#              \-> --record --> recording on the NAS dataset
+# Container entrypoint for Direct TS Streaming.
+# Pipeline: streamlink --> stdout --> ffmpeg --> TCP Port 8000 --> nginx (stream proxy) --> Jellyfin
 
 set -uo pipefail
 
@@ -18,10 +15,7 @@ STREAM_URL="${STREAM_URL:-}"
 STREAM_QUALITY="${STREAM_QUALITY:-best}"
 CHANNEL_NAME="${CHANNEL_NAME:-Stream}"
 CONTAINER_PORT="${CONTAINER_PORT:-8080}"
-HLS_DIR="${HLS_DIR:-/srv/www/hls}"
 RECORD_DIR="/records"
-HLS_TIME="${HLS_TIME:-4}"
-HLS_LIST_SIZE="${HLS_LIST_SIZE:-6}"
 RETRY_STREAMS="${RETRY_STREAMS:-10}"
 RESTART_DELAY="${RESTART_DELAY:-5}"
 FIFO_PATH="${FIFO_PATH:-/tmp/streamlink.fifo}"
@@ -62,7 +56,6 @@ start_pipeline() {
     nginx_pid=$!
     log "nginx started (pid $nginx_pid)"
 
-    # Derive a safe filename from the STREAM_URL
     local url_safe_name
     url_safe_name=$(echo "$STREAM_URL" | sed -E 's|^https?://||; s|[^a-zA-Z0-9_-]|_|g')
 
@@ -81,26 +74,20 @@ start_pipeline() {
             break
         }
 
-        # Start ffmpeg to consume the FIFO and output HLS
-        ffmpeg -hide_banner -loglevel warning -i "$FIFO_PATH" -c copy \
-            -f hls \
-            -hls_time "$HLS_TIME" \
-            -hls_list_size "$HLS_LIST_SIZE" \
-            -hls_delete_threshold 1 \
-            -hls_flags delete_segments+omit_endlist+independent_segments \
-            -hls_start_number_source epoch \
-            -hls_segment_filename "$HLS_DIR/seg_%05d.ts" \
-            "$HLS_DIR/live.m3u8" &
+        # FFmpeg now outputs a continuous MPEG-TS stream to a TCP port
+        # -ac 2 is added here to prevent the "Audio not supported" remuxing issue
+        ffmpeg -hide_banner -loglevel warning -i "$FIFO_PATH" \
+            -c:v copy \
+            -c:a aac -ac 2 \
+            -f mpegts \
+            "tcp://127.0.0.1:8000?listen" & 
         ffmpeg_pid=$!
 
-        # Use an array for optional arguments to avoid quoting bugs
         local streamlink_opts=()
         if [ "$ENABLE_RECORDING" = "true" ]; then
             streamlink_opts+=("--record" "$record_file")
         fi
 
-        # Start streamlink to fill the FIFO
-        # Note: ${streamlink_opts[@]} expands to multiple separate arguments
         streamlink \
             --stdout \
             "${streamlink_opts[@]}" \
@@ -151,20 +138,20 @@ else
     SUDO_USER_REQUIRED=1
 fi
 
-mkdir -p /srv/www/hls /records
-chown -R "$USER_ID:$GROUP_ID" /srv/www /records
+mkdir -p /records
+chown -R "$USER_ID:$GROUP_ID" /records
 
 if [ -z "$STREAM_URL" ]; then
     log "ERROR: STREAM_URL is not set."
     exit 1
 fi
 
+# We update the port in the config if the stream block uses a variable, 
+# but since we are using a static config now, you should ensure the port matches.
 sed -i "s/listen 8080;/listen $CONTAINER_PORT;/" /etc/nginx/nginx.conf
-safe_channel_name="${CHANNEL_NAME//[\"\\\\]/}"
-echo "set \$channel_name \"$safe_channel_name\";" > /tmp/nginx-channel.conf
 
 log "STREAM_URL=$STREAM_URL"
-log "quality=$STREAM_QUALITY channel=$CHANNEL_NAME"
+log "quality=$STREAM_QUALITY"
 
 if [ "$SUDO_USER_REQUIRED" = "1" ]; then
     exec gosu streamlink_user "$0" start-pipeline
