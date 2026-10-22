@@ -108,13 +108,15 @@ trap cleanup TERM INT
 if [ "$SUDO_USER_REQUIRED" = "1" ]; then
     # Use gosu to wrap the entire supervision loop as the dynamic user.
     # This ensures nginx, ffmpeg, and streamlink all run as the correct UID.
-    exec gosu streamlink_user bash <<'EOF'
+    RUN_CMD="gosu streamlink_user bash"
 else
     # Run as root
-    exec bash <<'EOF'
+    RUN_CMD="bash"
 fi
+
+exec $RUN_CMD <<'EOF'
     # We need to re-import the variables and functions inside the heredoc
-    # since gosu starts a new shell.
+    # since gosu/bash starts a new shell.
     set -uo pipefail
 
     # Re-calculate variables inside the user shell
