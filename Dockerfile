@@ -51,30 +51,20 @@ RUN pip wheel --no-cache-dir --wheel-dir /wheels ".[decompress]"
 FROM python:${PYTHON_VERSION}-slim AS runtime
 
 # ffmpeg segments the stream into HLS, nginx serves it to Jellyfin.
+# gosu is used to drop root privileges to a dynamic UID/GID at runtime.
 RUN apt-get update \
- && apt-get install -y --no-install-recommends ffmpeg nginx \
+ && apt-get install -y --no-install-recommends ffmpeg nginx gosu \
  && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /wheels /wheels
 RUN pip install --no-cache-dir --no-index --find-links=/wheels "streamlink[decompress]" \
  && rm -rf /wheels
 
-# Run as an unprivileged user. The UID/GID can be overridden at build time to
-# match the owner of the TrueNAS dataset used for recordings.
-ARG UID=1000
-ARG GID=1000
-RUN groupadd --gid "${GID}" streamlink \
- && useradd --uid "${UID}" --gid "${GID}" --create-home --shell /usr/sbin/nologin streamlink \
- && mkdir -p /srv/www/hls /records \
- && chown -R "${UID}:${GID}" /srv/www /records
-
 WORKDIR /srv/www
 
 COPY docker/nginx.conf /etc/nginx/nginx.conf
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
-
-USER streamlink
 
 ENV STREAM_URL="" \
     STREAM_QUALITY="best" \
