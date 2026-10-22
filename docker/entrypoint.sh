@@ -125,6 +125,7 @@ exec $RUN_CMD <<'EOF'
     CHANNEL_NAME="${CHANNEL_NAME:-Stream}"
     HLS_DIR="${HLS_DIR:-/srv/www/hls}"
     RECORD_DIR="${RECORD_DIR:-/records}"
+    ENABLE_RECORDING="${ENABLE_RECORDING:-true}"
     HLS_TIME="${HLS_TIME:-4}"
     HLS_LIST_SIZE="${HLS_LIST_SIZE:-6}"
     RETRY_STREAMS="${RETRY_STREAMS:-10}"
@@ -187,9 +188,14 @@ exec $RUN_CMD <<'EOF'
             "$HLS_DIR/live.m3u8" &
         ffmpeg_pid=$!
 
+        record_args=""
+        if [ "$ENABLE_RECORDING" = "true" ]; then
+            record_args="--record=\"$record_file\""
+        fi
+
         streamlink \
             --stdout \
-            --record="$record_file" \
+            $record_args \
             --retry-streams "$RETRY_STREAMS" \
             --loglevel info \
             $STREAMLINK_ARGS \
