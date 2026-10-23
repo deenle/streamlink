@@ -38,8 +38,8 @@ RUN apk add --no-cache ffmpeg nginx su-exec
 
 # Create a default user/group (UID 1000, GID 1000)
 # This can be overridden at runtime with PUID/PGID env vars
-RUN addgroup -g 1000 streamlink \
- && adduser -D -u 1000 -G streamlink -s /sbin/nologin streamlink
+RUN addgroup -g 1000 streamlink_user \
+ && adduser -D -u 1000 -G streamlink_user -s /sbin/nologin streamlink_user
 
 COPY --from=builder /wheels /wheels
 RUN pip install --no-cache-dir --no-index --find-links=/wheels "streamlink[decompress]" \
