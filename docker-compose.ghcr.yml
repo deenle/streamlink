@@ -23,6 +23,7 @@ services:
       - CHANNEL_NAME=${CHANNEL_NAME:-Stream}
       - CONTAINER_PORT=${CONTAINER_PORT:-8080}
       - ENABLE_RECORDING=${ENABLE_RECORDING:-true}
+      - LOG_LEVEL=${LOG_LEVEL:-warning}
 
     volumes:
       # Recordings are written here, e.g. /mnt/tank/recordings

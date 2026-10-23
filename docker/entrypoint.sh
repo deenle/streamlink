@@ -27,6 +27,7 @@ RESTART_DELAY="${RESTART_DELAY:-5}"
 FIFO_PATH="${FIFO_PATH:-/tmp/streamlink.fifo}"
 STREAMLINK_ARGS="${STREAMLINK_ARGS:-}"
 ENABLE_RECORDING="${ENABLE_RECORDING:-true}"
+LOG_LEVEL="${LOG_LEVEL:-warning}"
 
 log() {
     printf '%s [entrypoint] %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "$*" >&2
@@ -82,7 +83,7 @@ start_pipeline() {
         }
 
         # Start ffmpeg to consume the FIFO and output HLS
-        ffmpeg -hide_banner -loglevel warning -i "$FIFO_PATH" \
+        ffmpeg -hide_banner -loglevel "$LOG_LEVEL" -i "$FIFO_PATH" \
             -c copy \
             -bsf:a aac_adtstoasc \
             -f hls \
@@ -109,7 +110,7 @@ start_pipeline() {
             --stdout \
             $streamlink_opts \
             --retry-streams "$RETRY_STREAMS" \
-            --loglevel info \
+            --loglevel "$LOG_LEVEL" \
             $STREAMLINK_ARGS \
             "\"$STREAM_URL\"" "\"$STREAM_QUALITY\"" > "$FIFO_PATH" &
         streamlink_pid=$!
