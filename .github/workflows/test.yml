@@ -1,15 +1,16 @@
 name: Test
 
 on:
-  push:
-    branches-ignore:
-      - "automated/**"
-      - "dependabot/**"
-    tags-ignore:
-      - "**"
-  pull_request: {}
-  schedule:
-    - cron: "0 0 * * *"
+  # push:
+  #   branches-ignore:
+  #     - "automated/**"
+  #     - "dependabot/**"
+  #   tags-ignore:
+  #     - "**"
+  # pull_request: {}
+  # schedule:
+  #   - cron: "0 0 * * *"
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
