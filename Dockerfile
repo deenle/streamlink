@@ -54,7 +54,8 @@ FROM python:${PYTHON_VERSION}-slim AS runtime
 # gosu is used to drop root privileges to a dynamic UID/GID at runtime.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends ffmpeg nginx gosu \
- && rm -rf /var/lib/apt/lists/*
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 COPY --from=builder /wheels /wheels
 RUN pip install --no-cache-dir --no-index --find-links=/wheels "streamlink[decompress]" \
