@@ -84,7 +84,9 @@ start_pipeline() {
         # Start ffmpeg to consume the FIFO and output HLS
         ffmpeg -hide_banner -loglevel warning -i "$FIFO_PATH" \
             -c:v copy \
-            -c:a aac -ac 2 \
+            -af "pan=stereo|c0=c0|c1=c0" \
+            -c:a aac \
+            -ac 2 \
             -f hls \
             -hls_time "$HLS_TIME" \
             -hls_list_size "$HLS_LIST_SIZE" \
