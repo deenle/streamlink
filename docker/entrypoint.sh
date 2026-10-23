@@ -90,7 +90,9 @@ start_pipeline() {
             -hls_delete_threshold 1 \
             -hls_flags delete_segments+omit_endlist+independent_segments \
             -hls_start_number_source epoch \
-            -hls_segment_filename "$HLS_DIR/seg_%05d.ts" \
+            -hls_segment_type fmp4 \
+            -hls_fmp4_init_filename init.mp4 \
+            -hls_segment_filename "$HLS_DIR/seg_%05d.mp4" \
             "$HLS_DIR/live.m3u8" &
         ffmpeg_pid=$!
 
