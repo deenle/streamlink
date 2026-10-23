@@ -36,6 +36,11 @@ FROM python:${PYTHON_VERSION}-alpine AS runtime
 
 RUN apk add --no-cache ffmpeg nginx su-exec
 
+# Create a default user/group (UID 1000, GID 1000)
+# This can be overridden at runtime with PUID/PGID env vars
+RUN addgroup -g 1000 streamlink \
+ && adduser -D -u 1000 -G streamlink -s /sbin/nologin streamlink
+
 COPY --from=builder /wheels /wheels
 RUN pip install --no-cache-dir --no-index --find-links=/wheels "streamlink[decompress]" \
  && rm -rf /wheels
@@ -46,11 +51,8 @@ COPY docker/nginx.conf /etc/nginx/nginx.conf
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-# Pre-create directories and user (if UID/GID are fixed)
-RUN mkdir -p /srv/www/hls /records /tmp/streamlink /var/lib/nginx/logs /var/lib/nginx \
- && addgroup -g 1000 streamlink \
- && adduser -D -u 1000 -G streamlink streamlink \
- && chown -R streamlink:streamlink /srv/www /records /tmp/streamlink 
+RUN mkdir -p /srv/www/hls /records /tmp/streamlink \
+ && chown -R 1000:1000 /srv/www /records /tmp/streamlink
 
 ENV STREAM_URL="" \
     STREAM_QUALITY="best" \
