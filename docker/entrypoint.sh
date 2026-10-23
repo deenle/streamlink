@@ -75,12 +75,10 @@ start_pipeline() {
         }
 
         # FFmpeg now outputs a continuous MPEG-TS stream to a TCP port
-        # -ac 2 is added here to prevent the "Audio not supported" remuxing issue
         ffmpeg -hide_banner -loglevel warning -i "$FIFO_PATH" \
-            -c:v copy \
-            -c:a aac -ac 2 \
+            -c copy \
             -f mpegts \
-            "udp://127.0.0.1:8000" & 
+            "tcp://127.0.0.1:8000?listen" & 
         ffmpeg_pid=$!
 
         local streamlink_opts=()
