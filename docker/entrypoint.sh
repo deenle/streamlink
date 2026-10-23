@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/bin/sh
 #
-# Container entrypoint.
+# Container entrypoint (Alpine-compatible).
 #
 # Turns a single environment variable (STREAM_URL) into a running pipeline:
 #   streamlink --> stdout --> ffmpeg --> HLS segments --> nginx --> Jellyfin
@@ -97,21 +97,21 @@ start_pipeline() {
             "$HLS_DIR/live.m3u8" &
         ffmpeg_pid=$!
 
-        # Use an array for optional arguments to avoid quoting bugs
-        local streamlink_opts=()
+        # Build streamlink arguments as a string (sh doesn't support arrays)
+        local streamlink_opts=""
         if [ "$ENABLE_RECORDING" = "true" ]; then
-            streamlink_opts+=("--record" "$record_file")
+            streamlink_opts="--record $record_file"
         fi
 
         # Start streamlink to fill the FIFO
-        # Note: ${streamlink_opts[@]} expands to multiple separate arguments
-        streamlink \
+        # Use eval to properly handle the dynamic arguments
+        eval streamlink \
             --stdout \
-            "${streamlink_opts[@]}" \
+            $streamlink_opts \
             --retry-streams "$RETRY_STREAMS" \
             --loglevel info \
             $STREAMLINK_ARGS \
-            "$STREAM_URL" "$STREAM_QUALITY" > "$FIFO_PATH" &
+            "\"$STREAM_URL\"" "\"$STREAM_QUALITY\"" > "$FIFO_PATH" &
         streamlink_pid=$!
 
         wait "$streamlink_pid"
@@ -150,8 +150,9 @@ if [ "$USER_ID" = "0" ]; then
     log "Running as root, skipping user creation."
     SUDO_USER_REQUIRED=0
 else
-    groupadd -g "$GROUP_ID" streamlink_user || true
-    useradd -u "$USER_ID" -g "$GROUP_ID" -m -s /usr/sbin/nologin streamlink_user || true
+    # Alpine uses addgroup/adduser instead of groupadd/useradd
+    addgroup -g "$GROUP_ID" streamlink_user 2>/dev/null || true
+    adduser -D -u "$USER_ID" -G streamlink_user -s /sbin/nologin streamlink_user 2>/dev/null || true
     SUDO_USER_REQUIRED=1
 fi
 
@@ -164,14 +165,17 @@ if [ -z "$STREAM_URL" ]; then
 fi
 
 sed -i "s/listen 8080;/listen $CONTAINER_PORT;/" /etc/nginx/nginx.conf
-safe_channel_name="${CHANNEL_NAME//[\"\\\\]/}"
+
+# Use sed instead of bash parameter expansion for string sanitization
+safe_channel_name=$(echo "$CHANNEL_NAME" | sed 's/["\\\]//g')
 echo "set \$channel_name \"$safe_channel_name\";" > /tmp/nginx-channel.conf
 
 log "STREAM_URL=$STREAM_URL"
 log "quality=$STREAM_QUALITY channel=$CHANNEL_NAME"
 
 if [ "$SUDO_USER_REQUIRED" = "1" ]; then
-    exec gosu streamlink_user "$0" start-pipeline
+    # Use su-exec instead of gosu for Alpine
+    exec su-exec "$USER_ID:$GROUP_ID" "$0" start-pipeline
 else
-    exec bash "$0" start-pipeline
+    exec sh "$0" start-pipeline
 fi
