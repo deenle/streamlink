@@ -151,13 +151,13 @@ if [ "$USER_ID" = "0" ]; then
     SUDO_USER_REQUIRED=0
 else
     # Alpine uses addgroup/adduser instead of groupadd/useradd
-    addgroup -g "$GROUP_ID" streamlink_user 2>/dev/null || true
-    adduser -D -u "$USER_ID" -G streamlink_user -s /sbin/nologin streamlink_user 2>/dev/null || true
+    addgroup -g "$GROUP_ID" streamlink 2>/dev/null || true
+    adduser -D -u "$USER_ID" -G streamlink -s /sbin/nologin streamlink 2>/dev/null || true
     SUDO_USER_REQUIRED=1
 fi
 
 mkdir -p /srv/www/hls /records
-chown -R "$USER_ID:$GROUP_ID" /srv/www /records
+chown -R "$USER_ID:$GROUP_ID" /srv/www /records /var/lib/nginx
 
 if [ -z "$STREAM_URL" ]; then
     log "ERROR: STREAM_URL is not set."

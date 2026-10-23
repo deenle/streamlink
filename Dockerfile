@@ -47,10 +47,10 @@ COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 # Pre-create directories and user (if UID/GID are fixed)
-RUN mkdir -p /srv/www/hls /records /tmp/streamlink \
+RUN mkdir -p /srv/www/hls /records /tmp/streamlink /var/lib/nginx/logs /var/lib/nginx \
  && addgroup -g 1000 streamlink \
  && adduser -D -u 1000 -G streamlink streamlink \
- && chown -R streamlink:streamlink /srv/www /records /tmp/streamlink
+ && chown -R streamlink:streamlink /srv/www /records /tmp/streamlink 
 
 ENV STREAM_URL="" \
     STREAM_QUALITY="best" \
