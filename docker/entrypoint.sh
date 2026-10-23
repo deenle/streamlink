@@ -98,7 +98,7 @@ start_pipeline() {
         streamlink_pid=$!
 
         wait "$streamlink_pid"
-        # local pipeline_status=$?
+        local pipeline_status=$?
         streamlink_pid=""
 
         kill -TERM "$ffmpeg_pid" 2>/dev/null
