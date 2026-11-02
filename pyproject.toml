@@ -108,14 +108,14 @@ test = [
   "freezegun >=1.5.0",
 ]
 lint = [
-  "ruff ==0.17.1",
+  "ruff ==0.17.3",
 ]
 typing = [
   { include-group = "test" },
   { include-group = "docs" },
   { include-group = "script" },
   # tools and typing dependencies
-  "ty ==0.0.89",
+  "ty ==0.0.92",
   "mypy[faster-cache] ==2.4.0",
   "typing-extensions >=4.0.0",
   # dependency overrides
@@ -265,6 +265,12 @@ exclude = [
 
 [tool.ruff.lint]
 select = [
+  "correctness",
+  "suspicious",
+#  "complexity",
+  "performance",
+  "style",
+
   # pycodestyle
   "E",
   "W",
@@ -315,15 +321,20 @@ select = [
 ]
 ignore = [
   "async-function-with-timeout",
+  "blind-except",
   "builtin-attribute-shadowing",
   "compare-to-empty-string",
+  "escape-sequence-in-docstring",
   "explicit-string-concatenation",
+  "math-constant",
   "missing-f-string-syntax",
   "missing-trailing-comma",  # already covered by ruff's formatter
   "parenthesize-chained-operators",
+  "raise-vanilla-class",
   "redefined-loop-name",
   "return-in-generator",
   "stdlib-module-shadowing",
+  "subclass-builtin",
   "unnecessary-collection-call",
   "unnecessary-dunder-call",
   "unsorted-dunder-all",
